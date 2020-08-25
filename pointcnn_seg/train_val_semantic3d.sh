@@ -4,8 +4,8 @@
 gpu=
 setting=
 models_folder="../../models/seg/"
-train_files="../../data/semantic3d/out_part/train_data_files.txt"
-val_files="../../data/semantic3d/out_part/val_data_files.txt"
+train_files="../../data/semantic3d/train_data_files.txt"
+val_files="../../data/semantic3d/val_data_files.txt"
 
 usage() { echo "train/val pointcnn_seg with -g gpu_id -x setting options"; }
 

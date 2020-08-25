@@ -8,6 +8,12 @@ BASE_DIR=${1-../../data/semantic3d}
 # to indicate when a file is successfully unpacked.
 unpack() {
     local path=${1}
+    if test -f "$path"; then
+        echo "$path exists."
+    else
+      echo "$path not exists."
+      return
+    fi
     local marker=$path.unpacked
     if [ -e $marker ]; then
         echo "$path already unpacked, skipping"

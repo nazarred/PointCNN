@@ -56,7 +56,7 @@ def download_from_url(url, dst):
             os.remove(dst)
 
     if download:
-        response = requests.get(url, stream=True)
+        response = requests.get(url, stream=True, verify=False)
         total_size = int(response.headers.get('content-length', 0))
         chunk_size = 1024 * 1024
         bars = total_size // chunk_size

@@ -2,8 +2,9 @@ matplotlib
 plyfile
 python-mnist
 requests
-scipy
+scipy==1.4.1
+numpy==1.18.5
 svgpathtools
-tensorflow-gpu>=1.6.0
+tensorflow-gpu==1.15.3
 tqdm
 transforms3d
