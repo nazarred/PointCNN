@@ -67,8 +67,8 @@ def main():
             else:
                 xyzi, labels, xyzi_num = data_utils.read_xyz_label_from_txt(filename_ext)
 
-            xyz, i = np.split(xyzi, (3, 4), axis=-1)
-            # i = i / 2000 + 0.5
+            xyz, i, _ = np.split(xyzi, (3, 4), axis=-1)
+            i = i / 2000 + 0.5
             # todo what these offsets are for?
             offsets = [('zero', 0.0), ('half', args.block_size / 2)]
             for offset_name, offset in offsets:
