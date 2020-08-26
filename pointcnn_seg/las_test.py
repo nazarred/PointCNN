@@ -2,9 +2,9 @@
 import math
 num_class = 9
 
-sample_num = 12288
+sample_num = 6144
 
-batch_size = 6
+batch_size = 4
 
 num_epochs = 256
 
