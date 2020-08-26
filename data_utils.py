@@ -212,5 +212,7 @@ def read_xyz_label_from_las(filename_las):
         xyzi[i] = [p.x, p.y, p.z, p.intensity]
         labels[i] = p.classification
         i += 1
+        if i % 100000 == 0:
+            print(f"parsed {i} / {xyzirgb_num} points")
     print('Number of records: {}'.format(xyzirgb_num))
     return xyzi, labels, xyzirgb_num
