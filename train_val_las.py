@@ -35,9 +35,9 @@ def main():
     # args = parser.parse_args()
     args = argparse.Namespace(
         setting="las_test",
-        filelist="../data/las/train_data_files.txt",
-        filelist_val="../data/las/val_data_files.txt",
-        save_folder="../models/las/",
+        filelist="../../data/las/train_data_files.txt",
+        filelist_val="../../data/las/val_data_files.txt",
+        save_folder="../../models/las/",
         model="pointcnn_seg",
         # load_ckpt='../models/seg/pointcnn_seg_amsterdam_x4_12288_fps_2019-02-05-22-40-26_20662/ckpts/iter-25173',
 
