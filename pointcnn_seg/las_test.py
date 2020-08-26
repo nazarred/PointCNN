@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 import math
-num_class = 8
+num_class = 9
 
 sample_num = 12288
 
