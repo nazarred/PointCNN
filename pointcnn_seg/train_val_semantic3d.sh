@@ -46,4 +46,9 @@ then
 fi
 
 echo "Train/Val with setting $setting on GPU $gpu!"
+echo "$train_files"
+echo "$val_files"
+echo "$models_folder"
+
 CUDA_VISIBLE_DEVICES=$gpu python3 ../train_val_seg.py -t $train_files -v $val_files -s $models_folder -m pointcnn_seg -x $setting > $models_folder/pointcnn_seg_$setting.txt 2>&1 &
+CUDA_VISIBLE_DEVICES=0 python ../train_val_seg.py -t ../../data/semantic3d/train_data_files.txt -v ../../data/semantic3d/val_data_files.txt -s ../../models/seg/ -m pointcnn_seg -x semantic3d_x4_2048_fps

@@ -3,9 +3,12 @@ from __future__ import division
 from __future__ import print_function
 
 import os
+from datetime import datetime
+
 import h5py
 import plyfile
 import numpy as np
+import liblas
 from matplotlib import cm
 
 
@@ -184,3 +187,30 @@ def balance_classes(labels):
     repeat_num = repeat_num_floor + (np.random.rand(repeat_num_probs.shape[0]) < repeat_num_probs)
 
     return repeat_num.astype(np.int64)
+
+
+def read_xyz_label_from_txt(filename_txt):
+    print('{}-Loading {}...'.format(datetime.now(), filename_txt))
+    xyzirgb = np.loadtxt(filename_txt)
+    xyzirgb_num = xyzirgb.shape[0]
+    print('Number of records: {}'.format(xyzirgb_num))
+    xyz, labels = np.split(xyzirgb, [3], axis=-1)
+    labels = labels.flatten()
+    return xyz, labels, xyzirgb_num
+
+
+def read_xyz_label_from_las(filename_las):
+    print('{}-Loading {}...'.format(datetime.now(), filename_las))
+    f = liblas.file.File(filename_las, mode='r')
+    h = f.header
+    xyzirgb_num = h.point_records_count
+    xyzi = np.ndarray((xyzirgb_num, 4))
+    labels = np.ndarray(xyzirgb_num, np.int16)
+    i = 0
+    for p in f:
+        #         xyz[i] = [p.raw_x, p.raw_y, p.raw_z]
+        xyzi[i] = [p.x, p.y, p.z, p.intensity]
+        labels[i] = p.classification
+        i += 1
+    print('Number of records: {}'.format(xyzirgb_num))
+    return xyzi, labels, xyzirgb_num

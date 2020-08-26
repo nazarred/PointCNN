@@ -8,3 +8,4 @@ svgpathtools
 tensorflow-gpu==1.15.3
 tqdm
 transforms3d
+libLAS
