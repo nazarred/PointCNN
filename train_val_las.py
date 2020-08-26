@@ -34,14 +34,14 @@ def main():
     # parser.add_argument('--no_code_backup', help='Dont backup code', action='store_true')
     # args = parser.parse_args()
     args = argparse.Namespace(
-        setting="amsterdam_x4_12288_fps",
-        filelist="../data/Amsterdam/train_data_files.txt",
-        filelist_val="../data/Amsterdam/filelists/val_files_g_3.txt",
-        save_folder="../models/seg/",
+        setting="las_test",
+        filelist="../data/las/train_data_files.txt",
+        filelist_val="../data/las/val_data_files.txt",
+        save_folder="../models/las/",
         model="pointcnn_seg",
-        load_ckpt='../models/seg/pointcnn_seg_amsterdam_x4_12288_fps_2019-02-05-22-40-26_20662/ckpts/iter-25173',
+        # load_ckpt='../models/seg/pointcnn_seg_amsterdam_x4_12288_fps_2019-02-05-22-40-26_20662/ckpts/iter-25173',
 
-        #     load_ckpt = None,
+        load_ckpt = None,
         epochs=None,
         batch_size=None,
         log="-",
