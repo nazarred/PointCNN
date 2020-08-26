@@ -148,7 +148,8 @@ def is_h5_list(filelist):
     return all([line.strip()[-3:] == '.h5' for line in open(filelist)])
 
 
-def load_seg_list(filelist):
+def load_seg_list(filelist) -> list:
+    """Return list of full paths from file names in the file."""
     folder = os.path.dirname(filelist)
     return [os.path.join(folder, line.strip()) for line in open(filelist)]
 

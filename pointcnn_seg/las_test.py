@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 import math
-num_class = 27
+num_class = 8
 
 sample_num = 12288
 
@@ -61,7 +61,7 @@ sampling = 'fps'
 optimizer = 'adam'
 epsilon = 1e-3
 
-data_dim = 3
+data_dim = 4
 use_extra_features = False
 with_normal_feature = False
 with_X_transformation = True

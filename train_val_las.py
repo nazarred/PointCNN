@@ -64,6 +64,7 @@ def main():
 
     print(args)
 
+
     model = importlib.import_module(args.model)
     setting_path = os.path.join(os.path.dirname(__file__), args.model)
     sys.path.append(setting_path)
@@ -81,9 +82,13 @@ def main():
     jitter = setting.jitter
     jitter_val = setting.jitter_val
 
+
     # Prepare inputs
     print('{}-Preparing datasets...'.format(datetime.now()))
     is_list_of_h5_list = not data_utils.is_h5_list(args.filelist)
+    # so it looks like if we have a list of h5 files we create a seg_list with full paths to them
+    # but then save only the first one into the filelist_train and incrase seg_list_idx, so we will
+    # load only onw file into the memory at once?!
     if is_list_of_h5_list:
         seg_list = data_utils.load_seg_list(args.filelist)
         seg_list_idx = 0
@@ -207,7 +212,12 @@ def main():
     parameter_num = np.sum([np.prod(v.shape.as_list()) for v in tf.trainable_variables()])
     print('{}-Parameter number: {:d}.'.format(datetime.now(), parameter_num))
 
-    with tf.Session() as sess:
+
+    config = tf.ConfigProto()
+    config.gpu_options.allow_growth = True
+    config.allow_soft_placement = True
+
+    with tf.Session(config=config) as sess:
         summaries_op = tf.summary.merge_all('train')
         summaries_val_op = tf.summary.merge_all('val')
         summary_writer = tf.summary.FileWriter(folder_summary, sess.graph)
