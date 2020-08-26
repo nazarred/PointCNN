@@ -54,7 +54,8 @@ def main():
         data_center = np.zeros((batch_size, max_point_num, 3))
 
     LOAD_FROM_EXT = '.las'
-    folders = [os.path.join(root, folder) for folder in ['train', 'val', 'test']]
+    folders = [root]
+    # folders = [os.path.join(root, folder) for folder in ['train', 'val', 'test']]
     for folder in folders:
         datasets = [
             filename[:-4] for filename in os.listdir(folder) if filename.endswith(LOAD_FROM_EXT)
