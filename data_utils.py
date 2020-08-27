@@ -216,19 +216,19 @@ def read_xyz_label_from_las(filename_las):
         if i % 100000 == 0:
             print(f"parsed {i} / {xyzirgb_num} points")
     print('Number of records: {}'.format(xyzirgb_num))
-    return xyzi, labels, xyzirgb_num
+    return xyzi, labels, xyzirgb_num, h
 
 
-def save_xyz_label_to_las(filename_las, xyz, labels):
+def save_xyz_label_to_las(filename_las, xyz, labels, h):
     msg = 'Saving {}...'.format(filename_las)
     # timer_start(msg)
-    h = liblas.header.Header()
-    h.dataformat_id = 1
-    h.major = 1
-    h.minor = 2
-    h.min = np.min(xyz, axis=0)
-    h.max = np.max(xyz, axis=0)
-    h.scale = [1e-3, 1e-3, 1e-3]
+    # h = liblas.header.Header()
+    # h.dataformat_id = 1
+    # h.major = 1
+    # h.minor = 2
+    # h.min = np.min(xyz, axis=0)
+    # h.max = np.max(xyz, axis=0)
+    # h.scale = [1e-3, 1e-3, 1e-3]
 
     f = liblas.file.File(filename_las, mode='w', header=h)
     for i in range(xyz.shape[0]):

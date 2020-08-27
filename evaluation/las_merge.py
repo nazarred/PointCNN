@@ -148,12 +148,12 @@ def main():
             final_labels[:, 0] = merged_label  # + 1
             points_path = os.path.join(args.datafolder, category + LOAD_FROM_EXT)
             if LOAD_FROM_EXT == ".las":
-                points, _, _ = read_xyz_label_from_las(points_path)
+                points, _, _, h = read_xyz_label_from_las(points_path)
             else:
                 print('Reading {}'.format(points_path))
                 points = np.loadtxt(points_path)
             if SAVE_TO_EXT == '.las':
-                save_xyz_label_to_las(output_path, points, final_labels)
+                save_xyz_label_to_las(output_path, points, final_labels, h)
             else:
                 final = np.concatenate([points, final_labels], axis=-1)
                 print('Writing {}'.format(output_path))
