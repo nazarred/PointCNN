@@ -159,7 +159,7 @@ def main():
 
             timer_stop("Preprocessing")
             timer_stop("Inference")
-            timer_stop("Postprocessing")
+            # timer_stop("Postprocessing")
 
             filename_pred = filename[:-3] + '_pred.h5'
             print('{}-Saving {}...'.format(datetime.now(), filename_pred))
@@ -171,16 +171,16 @@ def main():
             if has_indices:
                 file.create_dataset('indices_split_to_full', data=data_h5['indices_split_to_full'][...])
             file.close()
-            timer_stop(msg)
+            # timer_stop(msg)
 
             if args.save_ply:
                 print('{}-Saving ply of {}...'.format(datetime.now(), filename_pred))
                 msg = 'Saving ply of {}...'.format(filename_pred)
-                timer_start(msg)
+                # timer_start(msg)
                 filepath_label_ply = os.path.join(filename_pred[:-3] + 'ply_label')
                 data_utils.save_ply_property_batch(data[:, :, 0:3], labels_pred[...],
                                                    filepath_label_ply, data_num[...], setting.num_class)
-                timer_stop(msg)
+                # timer_stop(msg)
 
             ######################################################################
         print('{}-Done!'.format(datetime.now()))
