@@ -234,7 +234,7 @@ def read_points_from_las(filename_las):
         if i % 100000 == 0:
             print(f"parsed {i} / {xyzirgb_num} points")
     print('Number of records: {}'.format(xyzirgb_num))
-    return xyzi, h
+    return points, h
 
 
 def save_xyz_label_to_las(filename_las, points, labels, h):
