@@ -66,3 +66,4 @@ fi
 
 echo "Test setting $setting on GPU $gpu with checkpoint $ckpt! with repeat $repeat"
 CUDA_VISIBLE_DEVICES=$gpu python3 ../test_general_seg.py -t ../../data/semantic3d/out_part/test_data_files.txt -f ../../data/semantic3d/out_part/test_data  -l $ckpt -m pointcnn_seg -x $setting -r $repeat $save_ply
+CUDA_VISIBLE_DEVICES=0 python ../test_general_seg.py -t ../../data/las/test_data_files.txt  -l ./../models/las/pointcnn_seg_las_test_2020-08-26-23-47-25_5456/ckpts/iter-46500  -m pointcnn_seg -x las_test -r 4
