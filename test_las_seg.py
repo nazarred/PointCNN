@@ -15,6 +15,10 @@ import data_utils
 import numpy as np
 import tensorflow as tf
 from datetime import datetime
+import time
+
+start_time_dict = {}
+total_time_dict = {}
 
 
 def main():
@@ -67,9 +71,7 @@ def main():
     parameter_num = np.sum([np.prod(v.shape.as_list()) for v in tf.trainable_variables()])
     print('{}-Parameter number: {:d}.'.format(datetime.now(), parameter_num))
 
-    import time
-    start_time_dict = {}
-    total_time_dict = {}
+
 
     current_time_ms = lambda: int(round(time.time() * 1000))
 
