@@ -85,12 +85,12 @@ def main():
     def timer_pause(msg):
         global start_time_dict
         global total_time_dict
-        total_time_dict[msg] += current_time_ms() - start_time_dict[msg]
+        total_time_dict[msg] += current_time_ms() - start_time_dict.get(msg)
 
     def timer_stop(msg):
         global total_time_dict
         timer_pause(msg)
-        print("{} completed in {}ms".format(msg, total_time_dict[msg]))
+        print("{} completed in {}ms".format(msg, total_time_dict.get(msg)))
         total_time_dict[msg] = 0
 
     config = tf.ConfigProto()
