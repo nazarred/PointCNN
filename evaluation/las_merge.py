@@ -30,7 +30,7 @@ import h5py
 #                     "sg27_station10":[285579196,"sg27_10"],
 #                     "sg28_station2":[170158281,"sg28_2"],
 #                     "sg28_station5":[267520082,"sg28_5"]}
-from data_utils import read_xyz_label_from_las, save_xyz_label_to_las
+from data_utils import read_xyz_label_from_las, save_xyz_label_to_las, read_points_from_las
 
 
 def main():
@@ -148,7 +148,7 @@ def main():
             final_labels[:, 0] = merged_label  # + 1
             points_path = os.path.join(args.datafolder, category + LOAD_FROM_EXT)
             if LOAD_FROM_EXT == ".las":
-                points, _, _, h = read_xyz_label_from_las(points_path)
+                points, h = read_points_from_las(points_path)
             else:
                 print('Reading {}'.format(points_path))
                 points = np.loadtxt(points_path)

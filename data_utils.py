@@ -219,7 +219,25 @@ def read_xyz_label_from_las(filename_las):
     return xyzi, labels, xyzirgb_num, h
 
 
-def save_xyz_label_to_las(filename_las, xyz, labels, h):
+def read_points_from_las(filename_las):
+    print('{}-Loading {}...'.format(datetime.now(), filename_las))
+    f = liblas.file.File(filename_las, mode='r')
+    h = f.header
+    xyzirgb_num = h.point_records_count
+    xyzi = np.ndarray((xyzirgb_num, 4))
+    i = 0
+    points = []
+    for p in f:
+        #         xyz[i] = [p.raw_x, p.raw_y, p.raw_z]
+        points.append(p)
+        i += 1
+        if i % 100000 == 0:
+            print(f"parsed {i} / {xyzirgb_num} points")
+    print('Number of records: {}'.format(xyzirgb_num))
+    return xyzi, h
+
+
+def save_xyz_label_to_las(filename_las, points, labels, h):
     msg = 'Saving {}...'.format(filename_las)
     # timer_start(msg)
     # h = liblas.header.Header()
@@ -231,19 +249,22 @@ def save_xyz_label_to_las(filename_las, xyz, labels, h):
     # h.scale = [1e-3, 1e-3, 1e-3]
 
     f = liblas.file.File(filename_las, mode='w', header=h)
-    for i in range(xyz.shape[0]):
+    num_p = len(points)
+    for i in range(num_p):
         p = liblas.point.Point()
-        p.x = xyz[i, 0] / h.scale[0]
-        p.y = xyz[i, 1] / h.scale[1]
-        p.z = xyz[i, 2] / h.scale[2]
+        p.x = points[i].x
+        p.y = points[i].y
+        p.z = points[i].z
         p.classification = labels[i]
         p.color = liblas.color.Color()
-        p.intensity = 100
-        p.return_number = 1
-        p.number_of_returns = 1
-        p.scan_direction = 1
-        p.scan_angle = 0
+        p.intensity = points[i].intensity
+        p.return_number = points[i].return_number
+        p.number_of_returns = points[i].number_of_returns
+        p.scan_direction = points[i].scan_direction
+        p.scan_angle = points[i].scan_angle
         f.write(p)
+        if i % 100000 == 0:
+            print(f"wrote {i} / {num_p} points")
     #         if i > 10000:
     #             break
     f.close()
