@@ -256,7 +256,7 @@ def rewrite_las_with_new_labels(filename_las_in, filename_las_out, new_labels):
     f_out.y = f_in.y
     f_out.z = f_in.z
     f_out.intensity = f_in.intensity
-    f_out.intensity = new_labels
+    f_out.classification = new_labels
     print('{}-Writing {}...'.format(datetime.now(), filename_las_out))
     f_out.close()
     print("Done")
