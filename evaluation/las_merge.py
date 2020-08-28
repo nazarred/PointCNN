@@ -30,7 +30,8 @@ import h5py
 #                     "sg27_station10":[285579196,"sg27_10"],
 #                     "sg28_station2":[170158281,"sg28_2"],
 #                     "sg28_station5":[267520082,"sg28_5"]}
-from data_utils import read_xyz_label_from_las, save_xyz_label_to_las, read_points_from_las
+from data_utils import read_xyz_label_from_las, save_xyz_label_to_las, read_points_from_las, \
+    rewrite_las_with_new_labels
 
 
 def main():
@@ -147,17 +148,19 @@ def main():
             final_labels = np.ndarray((merged_label.shape[0], 1), np.int64)
             final_labels[:, 0] = merged_label  # + 1
             points_path = os.path.join(args.datafolder, category + LOAD_FROM_EXT)
-            if LOAD_FROM_EXT == ".las":
-                points, h = read_points_from_las(points_path)
-            else:
-                print('Reading {}'.format(points_path))
-                points = np.loadtxt(points_path)
-            if SAVE_TO_EXT == '.las':
-                save_xyz_label_to_las(output_path, points, final_labels, h)
-            else:
-                final = np.concatenate([points, final_labels], axis=-1)
-                print('Writing {}'.format(output_path))
-                np.savetxt(output_path, final, fmt='%1.3f %1.3f %1.3f %i %i')
+
+            rewrite_las_with_new_labels(points_path, output_path, final_labels)
+            # if LOAD_FROM_EXT == ".las":
+            #     points, h = read_points_from_las(points_path)
+            # else:
+            #     print('Reading {}'.format(points_path))
+            #     points = np.loadtxt(points_path)
+            # if SAVE_TO_EXT == '.las':
+            #     save_xyz_label_to_las(output_path, points, final_labels, h)
+            # else:
+            #     final = np.concatenate([points, final_labels], axis=-1)
+            #     print('Writing {}'.format(output_path))
+            #     np.savetxt(output_path, final, fmt='%1.3f %1.3f %1.3f %i %i')
 
 if __name__ == '__main__':
     main()
