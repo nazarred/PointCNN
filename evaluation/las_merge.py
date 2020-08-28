@@ -149,7 +149,7 @@ def main():
             final_labels[:, 0] = merged_label  # + 1
             points_path = os.path.join(args.datafolder, category + LOAD_FROM_EXT)
 
-            rewrite_las_with_new_labels(points_path, output_path, final_labels)
+            rewrite_las_with_new_labels(points_path, output_path, merged_label)
             # if LOAD_FROM_EXT == ".las":
             #     points, h = read_points_from_las(points_path)
             # else:
