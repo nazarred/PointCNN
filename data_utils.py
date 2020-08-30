@@ -1,15 +1,13 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import os
 from datetime import datetime
 
 import h5py
 import plyfile
+import laspy
+import logging
+import logger
 import numpy as np
 # import liblas
-import laspy
 from matplotlib import cm
 
 
@@ -219,30 +217,36 @@ def read_xyz_label_from_las(filename_las):
     print('Number of records: {}'.format(xyzirgb_num))
     return xyzi, labels, xyzirgb_num, h
 
+
 def read_xyz_label_from_las_laspy(filename_las, remove_noise=False):
-    print('{}-Loading {}...'.format(datetime.now(), filename_las))
-    f = laspy.file.File(filename_las, mode='r')
+    logger = logging.getLogger(__name__)
+    logger.info(f"Loading {filename_las}...")
+    f = laspy.file.File(str(filename_las), mode='r')
     h = f.header
     xyzirgb_num = h.point_records_count
     label = np.array(f.classification, dtype=np.int16)
 
     if remove_noise:
         keep_points = np.logical_and(label != 18, label != 7)
-        print('Data will be processed without noise class 7, and 18')
+        logger.info('Data will be processed without noise class 7, and 18')
     else:
         keep_points = np.logical_and(label >= 0, label < 256)
-        print('Inactivate noise removal....you will have noise class in h5')
+        logger.info('Inactivate noise removal....you will have noise class in h5')
 
-    xyz = np.rollaxis(np.vstack((f.x[keep_points], f.y[keep_points], f.z[keep_points])), 1)
-    i = np.array(f.intensity[keep_points], dtype=np.int32).reshape(len(f.X[keep_points]),
-                                                                   1) / 65535
+    xyz = np.rollaxis(
+        np.vstack((f.x[keep_points], f.y[keep_points], f.z[keep_points])), 1,
+    )
+    i = np.array(
+        f.intensity[keep_points], dtype=np.int32).reshape(len(f.X[keep_points]), 1)  # / 65535
+
     rcrn = np.rollaxis(np.vstack((f.return_num[keep_points], f.num_returns[keep_points])), 1) / 10
     labels = np.array(f.classification[keep_points],
                       dtype=np.int16)  # .reshape(len(f.X[keep_points]),1)
 
     label1 = labels.copy()
     unique, count = np.unique(label1, return_counts=True)
-    print('Class codes:', dict(zip(unique, count)))
+    logger.info(f"Done loading {filename_las}")
+    logger.info(f'Class codes: {dict(zip(unique, count))}')
     return xyz, i, rcrn, labels, xyzirgb_num
 
 
@@ -312,3 +316,10 @@ def save_xyz_label_to_las(filename_las, points, labels, h):
     #             break
     f.close()
     # timer_stop(msg)
+
+
+def strfdelta(tdelta):
+    d = tdelta.days
+    h, rem = divmod(tdelta.seconds, 3600)
+    m, s = divmod(rem, 60)
+    return f"{d} days, {h}:{m}:{s}"

@@ -1,46 +1,52 @@
-#!/usr/bin/python3
-'''Prepare Data for Semantic3D Segmentation Task.'''
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
-import os
-import sys
+"""Prepare Data for LAS training task."""
 import math
 import h5py
 import argparse
+import logging
+import pathlib
 import numpy as np
 from datetime import datetime
+from data_utils import read_xyz_label_from_las_laspy, strfdelta
 
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-import data_utils
+from logger import setup_logging
 
 
 def main():
-    # parser = argparse.ArgumentParser()
-    # parser.add_argument('--folder', '-f', help='Path to data folder')
-    # parser.add_argument('--max_point_num', '-m', help='Max point number of each sample', type=int, default=8192)
-    # parser.add_argument('--block_size', '-b', help='Block size', type=float, default=5.0)
-    # parser.add_argument('--grid_size', '-g', help='Grid size', type=float, default=0.1)
-    # parser.add_argument('--save_ply', '-s', help='Convert .pts to .ply', action='store_true')
-    #
-    # args = parser.parse_args()
-    # print(args)
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        '--folders', '-f', help='Coma separated Paths to data folder which contains LAS file')
+    parser.add_argument(
+        '--log_path', '-lp', help='Path where log file should be saved.')
+    parser.add_argument(
+        '--max_point_num', '-m', help='Max point number of each sample', type=int, default=8192)
+    parser.add_argument('--block_size', '-b', help='Block size', type=float, default=5.0)
+    parser.add_argument('--grid_size', '-g', help='Grid size', type=float, default=0.1)
+    parser.add_argument('--save_ply', '-s', help='Convert .pts to .ply', action='store_true')
 
-    args = argparse.Namespace(
-        folder=None,
-        max_point_num=24576,  # 8192,
-        save_ply=False,  # True,
-        # meters
-        block_size=50.0,  # 5.0,
-        grid_size=1.0,  # 0.1,
-        # feet
-        #     block_size = 150.0,#5.0,
-        #     grid_size = 3.0,#0.1,
-    )
 
-    root = args.folder if args.folder else '../../data/las'
+    args = parser.parse_args()
+    log_path = args.log_path
+    setup_logging(log_path)
+    logger = logging.getLogger(__name__)
+    logger.info(f"Start preparing... "
+                f"Folders: {args.folders}, "
+                f"block size: {args.block_size}, "
+                f"grid size: {args.grid_size}, "
+                f"max_point_num: {args.max_point_num}"
+                )
+    start_time = datetime.utcnow()
+    # args = argparse.Namespace(
+    #     folders=None,
+    #     max_point_num=24576,  # 8192,
+    #     save_ply=False,  # True,
+    #     # meters
+    #     block_size=50.0,  # 5.0,
+    #     grid_size=1.0,  # 0.1,
+    #     # feet
+    #     #     block_size = 150.0,#5.0,
+    #     #     grid_size = 3.0,#0.1,
+    # )
+
     max_point_num = args.max_point_num
 
     batch_size = 2048 # how many blocks of block_size * block_size with max_point_num points are written in a single H5
@@ -52,40 +58,38 @@ def main():
 
     if args.save_ply:
         data_center = np.zeros((batch_size, max_point_num, 3))
-
     LOAD_FROM_EXT = '.las'
-    folders = [root]
-    # folders = [os.path.join(root, folder) for folder in ['train', 'val', 'test']]
-    for folder in folders:
+    for folder in args.folders.split(','):
+        folder = pathlib.Path(folder)
         datasets = [
-            filename[:-4] for filename in os.listdir(folder) if filename.endswith(LOAD_FROM_EXT)
+            path_to_las_file for path_to_las_file in folder.iterdir() if path_to_las_file.suffix.lower() == LOAD_FROM_EXT
         ]
-        for dataset_idx, dataset in enumerate(datasets):
-            filename_ext = os.path.join(folder, dataset + LOAD_FROM_EXT)
-            if LOAD_FROM_EXT == '.las':
-                xyzi, labels, xyzi_num = data_utils.read_xyz_label_from_las(filename_ext)
-            else:
-                xyzi, labels, xyzi_num = data_utils.read_xyz_label_from_txt(filename_ext)
+        for las_file_idx, path_to_las_file in enumerate(datasets):
+            start_time_file = datetime.utcnow()
 
-            xyz, i, _ = np.split(xyzi, (3, 4), axis=-1)
+            xyz, i, rcrn, labels, xyzirgb_num = read_xyz_label_from_las_laspy(path_to_las_file)
             i = i / 2000 + 0.5
+            
             # todo what these offsets are for?
             offsets = [('zero', 0.0), ('half', args.block_size / 2)]
             for offset_name, offset in offsets:
                 idx_h5 = 0
                 idx = 0
 
-                print('{}-Computing block id of {} points...'.format(datetime.now(), xyzi_num))
+                logger.info(f'Computing block id of {xyzirgb_num} points...')
                 xyz_min = np.amin(xyz, axis=0, keepdims=True) - offset
                 xyz_max = np.amax(xyz, axis=0, keepdims=True)
                 block_size = (args.block_size, args.block_size, 2 * (xyz_max[0, -1] - xyz_min[0, -1]))
                 xyz_blocks = np.floor((xyz - xyz_min) / block_size).astype(np.int)
 
-                print('{}-Collecting points belong to each block...'.format(datetime.now(), xyzi_num))
-                blocks, point_block_indices, block_point_counts = np.unique(xyz_blocks, return_inverse=True,
-                                                                            return_counts=True, axis=0)
-                block_point_indices = np.split(np.argsort(point_block_indices), np.cumsum(block_point_counts[:-1]))
-                print('{}-{} is split into {} blocks.'.format(datetime.now(), dataset, blocks.shape[0]))
+                logger.info('Collecting points belong to each block...')
+                blocks, point_block_indices, block_point_counts = np.unique(
+                    xyz_blocks, return_inverse=True, return_counts=True, axis=0,
+                )
+                block_point_indices = np.split(
+                    np.argsort(point_block_indices), np.cumsum(block_point_counts[:-1]),
+                )
+                logger.info(f'{path_to_las_file} is split into {blocks.shape[0]} blocks.')
 
                 block_to_block_idx_map = dict()
                 for block_idx in range(blocks.shape[0]):
@@ -115,7 +119,7 @@ def main():
                         block_point_indices[block_idx] = np.array([], dtype=np.int)
                         block_merge_count = block_merge_count + 1
                         break
-                print('{}-{} of {} blocks are merged.'.format(datetime.now(), block_merge_count, blocks.shape[0]))
+                logger.info(f'{block_merge_count} of {blocks.shape[0]} blocks are merged.')
 
                 idx_last_non_empty_block = 0
                 for block_idx in reversed(range(blocks.shape[0])):
@@ -180,7 +184,7 @@ def main():
                         idx_in_batch = idx % batch_size
                         data[idx_in_batch, 0:point_num, ...] = block_xzyrgbi[start:end, :]
                         data_num[idx_in_batch] = point_num
-                        label[idx_in_batch] = dataset_idx  # won't be used...
+                        label[idx_in_batch] = las_file_idx  # won't be used...
                         label_seg[idx_in_batch, 0:point_num] = block_labels[start:end]
                         indices_split_to_full[idx_in_batch, 0:point_num] = point_indices[start:end]
                         if args.save_ply:
@@ -190,8 +194,8 @@ def main():
                         if ((idx + 1) % batch_size == 0) or \
                                 (block_idx == idx_last_non_empty_block and block_split_idx == block_split_num - 1):
                             item_num = idx_in_batch + 1
-                            filename_h5 = os.path.join(folder, dataset + '_%s_%d.h5' % (offset_name, idx_h5))
-                            print('{}-Saving {}...'.format(datetime.now(), filename_h5))
+                            filename_h5 = path_to_las_file.parent / f'{path_to_las_file.stem}_{offset_name}_{idx_h5}.h5'
+                            logger.info(f'Saving {filename_h5}...')
 
                             file = h5py.File(filename_h5, 'w')
                             file.create_dataset('data', data=data[0:item_num, ...])
@@ -201,26 +205,30 @@ def main():
                             file.create_dataset('indices_split_to_full', data=indices_split_to_full[0:item_num, ...])
                             file.close()
 
-                            if args.save_ply and offset_name == 'zero':
-                                print('{}-Saving ply of {}...'.format(datetime.now(), filename_h5))
-                                filepath_label_ply = os.path.join(folder, 'ply_label',
-                                                                  dataset + '_label_%s_%d' % (offset_name, idx_h5))
-                                data_utils.save_ply_property_batch(
-                                    data[0:item_num, :, 0:3] + data_center[0:item_num, ...],
-                                    label_seg[0:item_num, ...],
-                                    filepath_label_ply, data_num[0:item_num, ...], 8)
+                            # if args.save_ply and offset_name == 'zero':
+                            #     logger.info(f'Saving ply of {filename_h5}...')
+                            #     filepath_label_ply = os.path.join(folder, 'ply_label',
+                            #                                       dataset + '_label_%s_%d' % (offset_name, idx_h5))
+                            #
+                            #     data_utils.save_ply_property_batch(
+                            #         data[0:item_num, :, 0:3] + data_center[0:item_num, ...],
+                            #         label_seg[0:item_num, ...],
+                            #         filepath_label_ply, data_num[0:item_num, ...], 8)
 
-#                             filepath_label_aligned_ply = os.path.join(folder, 'ply_label_aligned',
-#                                                                       dataset + '_label_%s_%d' % (
-#                                                                           offset_name, idx_h5))
-#                             data_utils.save_ply_property_batch(data[0:item_num, :, 0:3],
-#                                                                label_seg[0:item_num, ...],
-#                                                                filepath_label_aligned_ply,
-#                                                                data_num[0:item_num, ...], 8)
+                            #                             filepath_label_aligned_ply = os.path.join(folder, 'ply_label_aligned',
+                            #                                                                       dataset + '_label_%s_%d' % (
+                            #                                                                           offset_name, idx_h5))
+                            #                             data_utils.save_ply_property_batch(data[0:item_num, :, 0:3],
+                            #                                                                label_seg[0:item_num, ...],
+                            #                                                                filepath_label_aligned_ply,
+                            #                                                                data_num[0:item_num, ...], 8)
                             idx_h5 = idx_h5 + 1
                         idx = idx + 1
+            logger.info(f"Done preparing file: {path_to_las_file}")
+            logger.info(f"Time spent: {strfdelta(datetime.utcnow() - start_time_file)}")
+    logger.info(f"Done preparing folders: {args.folders}")
+    logger.info(f"Time spent: {strfdelta(datetime.utcnow() - start_time)}")
 
 
 if __name__ == '__main__':
     main()
-    print('{}-Done.'.format(datetime.now()))
