@@ -25,8 +25,7 @@ def main():
 
 
     args = parser.parse_args()
-    log_path = args.log_path
-    setup_logging(log_path)
+    setup_logging(args.log_path)
     logger = logging.getLogger(__name__)
     logger.info(f"Start preparing... "
                 f"Folders: {args.folders}, "

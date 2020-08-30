@@ -5,6 +5,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import logging
 import os
 import sys
 import math
@@ -18,36 +19,41 @@ import pointfly as pf
 import tensorflow as tf
 from datetime import datetime
 
+from logger import setup_logging
+
 
 def main():
-    # parser = argparse.ArgumentParser()
-    # parser.add_argument('--filelist', '-t', help='Path to training set ground truth (.txt)', required=True)
-    # parser.add_argument('--filelist_val', '-v', help='Path to validation set ground truth (.txt)', required=True)
-    # parser.add_argument('--load_ckpt', '-l', help='Path to a check point file for load')
-    # parser.add_argument('--save_folder', '-s', help='Path to folder for saving check points and summary', required=True)
-    # parser.add_argument('--model', '-m', help='Model to use', required=True)
-    # parser.add_argument('--setting', '-x', help='Setting to use', required=True)
-    # parser.add_argument('--epochs', help='Number of training epochs (default defined in setting)', type=int)
-    # parser.add_argument('--batch_size', help='Batch size (default defined in setting)', type=int)
-    # parser.add_argument('--log', help='Log to FILE in save folder; use - for stdout (default is log.txt)', metavar='FILE', default='log.txt')
-    # parser.add_argument('--no_timestamp_folder', help='Dont save to timestamp folder', action='store_true')
-    # parser.add_argument('--no_code_backup', help='Dont backup code', action='store_true')
-    # args = parser.parse_args()
-    args = argparse.Namespace(
-        setting="las_test",
-        filelist="../../data/las/train_data_files.txt",
-        filelist_val="../../data/las/val_data_files.txt",
-        save_folder="../../models/las/",
-        model="pointcnn_seg",
-        # load_ckpt='../models/seg/pointcnn_seg_amsterdam_x4_12288_fps_2019-02-05-22-40-26_20662/ckpts/iter-25173',
-
-        load_ckpt = None,
-        epochs=None,
-        batch_size=None,
-        log="-",
-        no_timestamp_folder=None,
-        no_code_backup=None
-    )
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--filelist', '-t', help='Path to training set ground truth (.txt)', required=True)
+    parser.add_argument('--filelist_val', '-v', help='Path to validation set ground truth (.txt)', required=True)
+    parser.add_argument('--load_ckpt', '-l', help='Path to a check point file for load')
+    parser.add_argument('--save_folder', '-s', help='Path to folder for saving check points and summary', required=True)
+    parser.add_argument('--model', '-m', help='Model to use', required=True)
+    parser.add_argument('--setting', '-x', help='Setting to use', required=True)
+    parser.add_argument('--epochs', help='Number of training epochs (default defined in setting)', type=int)
+    parser.add_argument('--batch_size', help='Batch size (default defined in setting)', type=int)
+    parser.add_argument(
+        '--log_path', '-lp', help='Path where log file should be saved.')
+    parser.add_argument('--no_timestamp_folder', help='Dont save to timestamp folder', action='store_true')
+    parser.add_argument('--no_code_backup', help='Dont backup code', action='store_true')
+    args = parser.parse_args()
+    # args = argparse.Namespace(
+    #     setting="las_test",
+    #     filelist="../../data/las/train_data_files.txt",
+    #     filelist_val="../../data/las/val_data_files.txt",
+    #     save_folder="../../models/las/",
+    #     model="pointcnn_seg",
+    #     # load_ckpt='../models/seg/pointcnn_seg_amsterdam_x4_12288_fps_2019-02-05-22-40-26_20662/ckpts/iter-25173',
+    #
+    #     load_ckpt = None,
+    #     epochs=None,
+    #     batch_size=None,
+    #     log="-",
+    #     no_timestamp_folder=None,
+    #     no_code_backup=None
+    # )
+    setup_logging(args.log_path)
+    logger = logging.getLogger(__name__)
 
     if not args.no_timestamp_folder:
         time_string = datetime.now().strftime('%Y-%m-%d-%H-%M-%S')
@@ -57,12 +63,12 @@ def main():
     if not os.path.exists(root_folder):
         os.makedirs(root_folder)
 
-    if args.log != '-':
-        sys.stdout = open(os.path.join(root_folder, args.log), 'w')
+    # if args.log != '-':
+    #     sys.stdout = open(os.path.join(root_folder, args.log), 'w')
 
-    print('PID:', os.getpid())
+    logger.info(f'PID: {os.getpid()}')
 
-    print(args)
+    logger.info(args)
 
 
     model = importlib.import_module(args.model)
@@ -84,7 +90,7 @@ def main():
 
 
     # Prepare inputs
-    print('{}-Preparing datasets...'.format(datetime.now()))
+    logger.info('{}-Preparing datasets...'.format(datetime.now()))
     is_list_of_h5_list = not data_utils.is_h5_list(args.filelist)
     # so it looks like if we have a list of h5 files we create a seg_list with full paths to them
     # but then save only the first one into the filelist_train and incrase seg_list_idx, so we will
@@ -106,11 +112,11 @@ def main():
     num_train = data_train.shape[0]
     point_num = data_train.shape[1]
     num_val = data_val.shape[0]
-    print('{}-{:d}/{:d} training/validation samples.'.format(datetime.now(), num_train, num_val))
+    logger.info('{}-{:d}/{:d} training/validation samples.'.format(datetime.now(), num_train, num_val))
     batch_num = (num_train * num_epochs + batch_size - 1) // batch_size
-    print('{}-{:d} training batches.'.format(datetime.now(), batch_num))
+    logger.info('{}-{:d} training batches.'.format(datetime.now(), batch_num))
     batch_num_val = math.ceil(num_val / batch_size)
-    print('{}-{:d} testing batches per test.'.format(datetime.now(), batch_num_val))
+    logger.info('{}-{:d} testing batches per test.'.format(datetime.now(), batch_num_val))
 
     ######################################################################
     # Placeholders
@@ -136,7 +142,7 @@ def main():
         if setting.use_extra_features:
             if setting.with_normal_feature:
                 if setting.data_dim < 6:
-                    print('Only 3D normals are supported!')
+                    logger.info('Only 3D normals are supported!')
                     exit()
                 elif setting.data_dim == 6:
                     features_augmented = pf.augment(features_sampled, rotations)
@@ -210,7 +216,7 @@ def main():
         os.makedirs(folder_summary)
 
     parameter_num = np.sum([np.prod(v.shape.as_list()) for v in tf.trainable_variables()])
-    print('{}-Parameter number: {:d}.'.format(datetime.now(), parameter_num))
+    logger.info('{}-Parameter number: {:d}.'.format(datetime.now(), parameter_num))
 
 
     config = tf.ConfigProto()
@@ -227,13 +233,13 @@ def main():
         # Load the model
         if args.load_ckpt is not None:
             saver.restore(sess, args.load_ckpt)
-            print('{}-Checkpoint loaded from {}!'.format(datetime.now(), args.load_ckpt))
+            logger.info('{}-Checkpoint loaded from {}!'.format(datetime.now(), args.load_ckpt))
         else:
             latest_ckpt = tf.train.latest_checkpoint(folder_ckpt)
             if latest_ckpt:
-                print('{}-Found checkpoint {}'.format(datetime.now(), latest_ckpt))
+                logger.info('{}-Found checkpoint {}'.format(datetime.now(), latest_ckpt))
                 saver.restore(sess, latest_ckpt)
-                print('{}-Checkpoint loaded from {} (Iter {})'.format(
+                logger.info('{}-Checkpoint loaded from {} (Iter {})'.format(
                     datetime.now(), latest_ckpt, sess.run(global_step)))
 
         for batch_idx_train in range(batch_num):
@@ -243,7 +249,7 @@ def main():
                     or batch_idx_train == batch_num - 1:
                 filename_ckpt = os.path.join(folder_ckpt, 'iter')
                 saver.save(sess, filename_ckpt, global_step=global_step)
-                print('{}-Checkpoint saved to {}!'.format(datetime.now(), filename_ckpt))
+                logger.info('{}-Checkpoint saved to {}!'.format(datetime.now(), filename_ckpt))
 
                 sess.run(reset_metrics_op)
                 for batch_val_idx in range(batch_num_val):
@@ -273,7 +279,7 @@ def main():
                 loss_val, t_1_acc_val, t_1_per_class_acc_val, summaries_val, step = sess.run(
                     [loss_mean_op, t_1_acc_op, t_1_per_class_acc_op, summaries_val_op, global_step])
                 summary_writer.add_summary(summaries_val, step)
-                print('{}-[Val  ]-Average:      Loss: {:.4f}  T-1 Acc: {:.4f}  T-1 mAcc: {:.4f}'
+                logger.info('{}-[Val  ]-Average:      Loss: {:.4f}  T-1 Acc: {:.4f}  T-1 mAcc: {:.4f}'
                       .format(datetime.now(), loss_val, t_1_acc_val, t_1_per_class_acc_val))
                 sys.stdout.flush()
             ######################################################################
@@ -326,11 +332,11 @@ def main():
                                                                         summaries_op,
                                                                         global_step])
                 summary_writer.add_summary(summaries, step)
-                print('{}-[Train]-Iter: {:06d}  Loss: {:.4f}  T-1 Acc: {:.4f}  T-1 mAcc: {:.4f}'
+                logger.info('{}-[Train]-Iter: {:06d}  Loss: {:.4f}  T-1 Acc: {:.4f}  T-1 mAcc: {:.4f}'
                       .format(datetime.now(), step, loss, t_1_acc, t_1_per_class_acc))
                 sys.stdout.flush()
             ######################################################################
-        print('{}-Done!'.format(datetime.now()))
+        logger.info('{}-Done!'.format(datetime.now()))
 
 if __name__ == '__main__':
     main()

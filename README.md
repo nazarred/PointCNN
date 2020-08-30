@@ -216,3 +216,12 @@ Here we list the commands for training/evaluating PointCNN on classification and
   cd <your path>/PointCNN
   tensorboard --logdir=../models/<seg/cls> <--port=6006>
   ```
+ 
+python data_conversions/prepare_las_data.py -f ../data/las_test_1/val,/home/nazar/phoenixlidar/ml/data/las_test_1/train -lp ../data/las_test_1/prepare_files.log -m 24576 -b 50 -g 1.0
+
+python data_conversions/prepare_las_filelists.py -f ../data/las_test_1 -lp ../data/las_test_1/prepare_file_list.log
+ 
+CUDA_VISIBLE_DEVICES=0 python train_val_las.py -t ../data/las_test_1/train_data_files.txt -v ../data/las_test_1/val_data_files.txt -s ../models/las_test_1  -lp ../data/las_test_1/train_validate.log -m pointcnn_seg -x las_test
+
+  
+

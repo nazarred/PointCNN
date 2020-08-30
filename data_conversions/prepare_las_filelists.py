@@ -5,11 +5,14 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import logging
 import os
 import math
 import random
 import argparse
 from datetime import datetime
+
+from logger import setup_logging
 
 
 def main():
@@ -17,9 +20,14 @@ def main():
     parser.add_argument('--folder', '-f', help='Path to data folder')
     parser.add_argument('--h5_num', '-d', help='Number of h5 files to be loaded each time', type=int, default=4)
     parser.add_argument('--repeat_num', '-r', help='Number of repeatly using each loaded h5 list', type=int, default=2)
+    parser.add_argument(
+        '--log_path', '-lp', help='Path where log file should be saved.')
 
     args = parser.parse_args()
-    print(args)
+    
+    setup_logging(args.log_path)
+    logger = logging.getLogger(__name__)
+    logger.info(args)
 
     root = args.folder if args.folder else '../../data/las/'
 
@@ -32,7 +40,7 @@ def main():
     train_h5 = split_filelists['train'] 
     random.shuffle(train_h5)
     train_list = os.path.join(root, 'train_data_files.txt')
-    print('{}-Saving {}...'.format(datetime.now(), train_list))
+    logger.info('{}-Saving {}...'.format(datetime.now(), train_list))
     with open(train_list, 'w') as filelist:
         list_num = math.ceil(len(train_h5) / args.h5_num)
         for list_idx in range(list_num):
@@ -49,14 +57,14 @@ def main():
                 
     val_h5 = split_filelists['val']
     val_list = os.path.join(root, 'val_data_files.txt')
-    print('{}-Saving {}...'.format(datetime.now(), val_list))
+    logger.info('{}-Saving {}...'.format(datetime.now(), val_list))
     with open(val_list, 'w') as filelist:
         for filename_h5 in val_h5:
             filelist.write(filename_h5)
 
     test_h5 = split_filelists['test']
     test_list = os.path.join(root, 'test_files.txt')
-    print('{}-Saving {}...'.format(datetime.now(), test_list))
+    logger.info('{}-Saving {}...'.format(datetime.now(), test_list))
     with open(test_list, 'w') as filelist:
         for filename_h5 in test_h5:
             filelist.write(filename_h5)

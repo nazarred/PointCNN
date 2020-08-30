@@ -154,6 +154,7 @@ def load_seg_list(filelist) -> list:
 
 
 def load_seg(filelist):
+    logger = logging.getLogger(__name__)
     points = []
     labels = []
     point_nums = []
@@ -162,6 +163,7 @@ def load_seg(filelist):
 
     folder = os.path.dirname(filelist)
     for line in open(filelist):
+        logger.info(f'Reading h5 file: {line}')
         data = h5py.File(os.path.join(folder, line.strip()))
         points.append(data['data'][...].astype(np.float32))
         labels.append(data['label'][...].astype(np.int64))
@@ -169,6 +171,7 @@ def load_seg(filelist):
         labels_seg.append(data['label_seg'][...].astype(np.int64))
         if 'indices_split_to_full' in data:
             indices_split_to_full.append(data['indices_split_to_full'][...].astype(np.int64))
+        logger.info(f'Done reading h5 file: {line}')
 
     return (np.concatenate(points, axis=0),
             np.concatenate(labels, axis=0),
