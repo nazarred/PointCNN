@@ -236,6 +236,7 @@ def read_xyz_label_from_las_laspy(filename_las, remove_noise=False):
         keep_points = np.logical_and(label >= 0, label < 256)
         logger.info('Inactivate noise removal....you will have noise class in h5')
 
+
     xyz = np.rollaxis(
         np.vstack((f.x[keep_points], f.y[keep_points], f.z[keep_points])), 1,
     )
@@ -245,6 +246,10 @@ def read_xyz_label_from_las_laspy(filename_las, remove_noise=False):
     rcrn = np.rollaxis(np.vstack((f.return_num[keep_points], f.num_returns[keep_points])), 1) / 10
     labels = np.array(f.classification[keep_points],
                       dtype=np.int16)  # .reshape(len(f.X[keep_points]),1)
+    if True:
+        # use only ground and powerline labels, change other labels to unclassified
+        make_unclassified = np.logical_and(np.logical_and(labels != 1, labels != 2), labels != 8)
+        labels[make_unclassified] = 1
 
     label1 = labels.copy()
     unique, count = np.unique(label1, return_counts=True)

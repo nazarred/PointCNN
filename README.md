@@ -223,5 +223,5 @@ python data_conversions/prepare_las_filelists.py -f ../data/las_test_1 -lp ../da
  
 CUDA_VISIBLE_DEVICES=0 python train_val_las.py -t ../data/las_test_1/train_data_files.txt -v ../data/las_test_1/val_data_files.txt -s ../models/las_test_1  -lp ../data/las_test_1/train_validate.log -m pointcnn_seg -x las_test
 
-  
+CUDA_VISIBLE_DEVICES=0 python test_las_seg.py -t ../data/nazar/data/las_test_1/test_files.txt  -l ../models/las_test_1/pointcnn_seg_las_test_2020-08-30-23-08-49_4536/ckpts/iter-66000  -m pointcnn_seg -x las_test -r 1 --max_point_num 24576
 

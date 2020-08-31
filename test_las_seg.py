@@ -1,10 +1,7 @@
 #!/usr/bin/python3
 """Testing On Segmentation Task."""
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
+import logging
 import os
 import sys
 import math
@@ -15,10 +12,10 @@ import data_utils
 import numpy as np
 import tensorflow as tf
 from datetime import datetime
-import time
+from data_utils import strfdelta
 
-start_time_dict = {}
-total_time_dict = {}
+from logger import setup_logging
+
 
 
 def main():
@@ -30,8 +27,17 @@ def main():
     parser.add_argument('--model', '-m', help='Model to use', required=True)
     parser.add_argument('--setting', '-x', help='Setting to use', required=True)
     parser.add_argument('--save_ply', '-s', help='Save results as ply', action='store_true')
+    parser.add_argument(
+        '--log_path', '-lp', help='Path where log file should be saved.')
+
     args = parser.parse_args()
-    print(args)
+
+    setup_logging(args.log_path)
+    logger = logging.getLogger(__name__)
+
+    logger.info(args)
+
+    start_time = datetime.utcnow()
 
     model = importlib.import_module(args.model)
     setting_path = os.path.join(os.path.dirname(__file__), args.model)
@@ -69,29 +75,9 @@ def main():
     saver = tf.train.Saver()
 
     parameter_num = np.sum([np.prod(v.shape.as_list()) for v in tf.trainable_variables()])
-    print('{}-Parameter number: {:d}.'.format(datetime.now(), parameter_num))
+    logger.info(f'Parameter number: {parameter_num}.')
 
 
-
-    current_time_ms = lambda: int(round(time.time() * 1000))
-
-    def timer_start(msg):
-        global start_time_dict
-        global total_time_dict
-        start_time_dict[msg] = current_time_ms()
-        if not msg in total_time_dict:
-            total_time_dict[msg] = 0
-
-    def timer_pause(msg):
-        global start_time_dict
-        global total_time_dict
-        total_time_dict[msg] += current_time_ms() - start_time_dict.get(msg)
-
-    def timer_stop(msg):
-        global total_time_dict
-        timer_pause(msg)
-        print("{} completed in {}ms".format(msg, total_time_dict.get(msg)))
-        total_time_dict[msg] = 0
 
     config = tf.ConfigProto()
     config.gpu_options.allow_growth = True
@@ -100,17 +86,16 @@ def main():
     with tf.Session(config=config) as sess:
         # Load the model
         saver.restore(sess, args.load_ckpt)
-        print('{}-Checkpoint loaded from {}!'.format(datetime.now(), args.load_ckpt))
+        logger.info(f'Checkpoint loaded from {args.load_ckpt}!')
 
         indices_batch_indices = np.tile(np.reshape(np.arange(batch_size), (batch_size, 1, 1)), (1, sample_num, 1))
 
         folder = os.path.dirname(args.filelist)
         filenames = [os.path.join(folder, line.strip()) for line in open(args.filelist)]
         for filename in filenames:
-            msg = 'Reading {}...'.format(filename)
-            timer_start(msg)
+            logger.info(f'Reading {filename}...')
+            file_start_time = datetime.utcnow()
             data_h5 = h5py.File(filename)
-            timer_stop(msg)
 
             data = data_h5['data'][...].astype(np.float32)
             data_num = data_h5['data_num'][...].astype(np.int32)
@@ -119,13 +104,12 @@ def main():
             labels_pred = np.full((batch_num, max_point_num), -1, dtype=np.int32)
             confidences_pred = np.zeros((batch_num, max_point_num), dtype=np.float32)
 
-            print('{}-{:d} testing batches.'.format(datetime.now(), batch_num))
+            logger.info(f'{batch_num} testing batches.')
             for batch_idx in range(batch_num):
                 if batch_idx % 10 == 0:
-                    print('{}-Processing {} of {} batches.'.format(datetime.now(), batch_idx, batch_num))
+                    logger.info(f'Processing {batch_idx} of {batch_num} batches.')
 
-                msg = "Preprocessing"
-                timer_start(msg)
+
                 points_batch = data[[batch_idx] * batch_size, ...]
                 point_num = data_num[batch_idx]
 
@@ -134,10 +118,7 @@ def main():
                 np.random.shuffle(indices_shuffle)
                 indices_batch_shuffle = np.reshape(indices_shuffle, (batch_size, sample_num, 1))
                 indices_batch = np.concatenate((indices_batch_indices, indices_batch_shuffle), axis=2)
-                timer_pause(msg)
 
-                msg = "Inference"
-                timer_start(msg)
                 seg_probs = sess.run([seg_probs_op],
                                         feed_dict={
                                             pts_fts: points_batch,
@@ -157,12 +138,10 @@ def main():
                 labels_pred[batch_idx, 0:point_num] = np.array([label for label, _ in predictions])
                 confidences_pred[batch_idx, 0:point_num] = np.array([confidence for _, confidence in predictions])
 
-            timer_stop("Preprocessing")
-            timer_stop("Inference")
-            # timer_stop("Postprocessing")
+
 
             filename_pred = filename[:-3] + '_pred.h5'
-            print('{}-Saving {}...'.format(datetime.now(), filename_pred))
+            logger.info(f'Saving {filename_pred}...')
             file = h5py.File(filename_pred, 'w')
             file.create_dataset('data_num', data=data_num)
             file.create_dataset('label_seg', data=labels_pred)
@@ -171,10 +150,9 @@ def main():
             if has_indices:
                 file.create_dataset('indices_split_to_full', data=data_h5['indices_split_to_full'][...])
             file.close()
-            # timer_stop(msg)
 
             if args.save_ply:
-                print('{}-Saving ply of {}...'.format(datetime.now(), filename_pred))
+                logger.info('{}-Saving ply of {}...'.format(datetime.now(), filename_pred))
                 msg = 'Saving ply of {}...'.format(filename_pred)
                 # timer_start(msg)
                 filepath_label_ply = os.path.join(filename_pred[:-3] + 'ply_label')
@@ -183,7 +161,8 @@ def main():
                 # timer_stop(msg)
 
             ######################################################################
-        print('{}-Done!'.format(datetime.now()))
+            logger.info(f'Done predicting for {filename}. Time spent: {strfdelta(datetime.utcnow() - file_start_time)}')
+        logger.info('{}-Done!'.format(datetime.now()))
 
 
 if __name__ == '__main__':
