@@ -221,7 +221,7 @@ def read_xyz_label_from_las(filename_las):
     return xyzi, labels, xyzirgb_num, h
 
 
-def read_xyz_label_from_las_laspy(filename_las, remove_noise=False):
+def read_xyz_label_from_las_laspy(filename_las, remove_noise=False, use_hag_as_z=False):
     logger = logging.getLogger(__name__)
     logger.info(f"Loading {filename_las}...")
     f = laspy.file.File(str(filename_las), mode='r')
@@ -236,9 +236,20 @@ def read_xyz_label_from_las_laspy(filename_las, remove_noise=False):
         keep_points = np.logical_and(label >= 0, label < 256)
         logger.info('Inactivate noise removal....you will have noise class in h5')
 
+    if use_hag_as_z:
+        HAG_ATTRIBUTE_NAMES = ["height_above_ground", "normalized_height"]
+        z = None
+        for attribute_name in HAG_ATTRIBUTE_NAMES:
+            if attribute_name in f.point_format.lookup:
+                z = getattr(f, attribute_name)[keep_points]
+        if z is None:
+            raise Exception("can't find height_above_ground values")
+
+    else:
+        z = f.z[keep_points]
 
     xyz = np.rollaxis(
-        np.vstack((f.x[keep_points], f.y[keep_points], f.z[keep_points])), 1,
+        np.vstack((f.x[keep_points], f.y[keep_points], z)), 1,
     )
     i = np.array(
         f.intensity[keep_points], dtype=np.int32).reshape(len(f.X[keep_points]), 1)  # / 65535

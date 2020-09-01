@@ -22,6 +22,7 @@ def main():
     parser.add_argument('--block_size', '-b', help='Block size', type=float, default=5.0)
     parser.add_argument('--grid_size', '-g', help='Grid size', type=float, default=0.1)
     parser.add_argument('--save_ply', '-s', help='Convert .pts to .ply', action='store_true')
+    parser.add_argument('--use_hag_as_z', '-hag', help='Use height above ground instead of Z', action='store_true')
 
 
     args = parser.parse_args()
@@ -66,7 +67,7 @@ def main():
         for las_file_idx, path_to_las_file in enumerate(datasets):
             start_time_file = datetime.utcnow()
 
-            xyz, i, rcrn, labels, xyzirgb_num = read_xyz_label_from_las_laspy(path_to_las_file)
+            xyz, i, rcrn, labels, xyzirgb_num = read_xyz_label_from_las_laspy(path_to_las_file, use_hag_as_z=args.use_hag_as_z)
             i = i / 2000 + 0.5
             
             # todo what these offsets are for?
