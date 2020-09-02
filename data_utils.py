@@ -258,9 +258,11 @@ def read_xyz_label_from_las_laspy(filename_las, remove_noise=False, use_hag_as_z
     labels = np.array(f.classification[keep_points],
                       dtype=np.int16)  # .reshape(len(f.X[keep_points]),1)
     if True:
-        # use only ground and powerline labels, change other labels to unclassified
-        make_unclassified = np.logical_and(np.logical_and(labels != 1, labels != 2), labels != 8)
-        labels[make_unclassified] = 1
+        # use only unclassified and powerline labels, change other labels to unclassified
+        # make_unclassified = np.logical_and(np.logical_and(labels != 1, labels != 2), labels != 8)
+        # labels[make_unclassified] = 1
+        labels[labels != 8] = 0
+        labels[labels == 8] = 1
 
     label1 = labels.copy()
     unique, count = np.unique(label1, return_counts=True)
@@ -279,6 +281,8 @@ def rewrite_las_with_new_labels(filename_las_in, filename_las_out, new_labels):
     f_out.y = f_in.y
     f_out.z = f_in.z
     f_out.intensity = f_in.intensity
+    if True:
+        new_labels[new_labels == 1] = 8
     f_out.classification = new_labels
     print('{}-Writing {}...'.format(datetime.now(), filename_las_out))
     f_out.close()

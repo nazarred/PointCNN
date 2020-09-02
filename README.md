@@ -217,11 +217,12 @@ Here we list the commands for training/evaluating PointCNN on classification and
   tensorboard --logdir=../models/<seg/cls> <--port=6006>
   ```
  
-python data_conversions/prepare_las_data.py -f ../data/las_test_1/val,/home/nazar/phoenixlidar/ml/data/las_test_1/train -lp ../data/las_test_1/prepare_files.log -m 24576 -b 50 -g 1.0 --use_hag_as_z
+python data_conversions/prepare_las_data.py -f ../data/las_test_2/ -fc val,test,val -lp ../data/las_test_2/prepare_files.log -m 24576 -b 50 -g 1.0 --use_hag_as_z
 
 python data_conversions/prepare_las_filelists.py -f ../data/las_test_1 -lp ../data/las_test_1/prepare_file_list.log
  
-CUDA_VISIBLE_DEVICES=0 python train_val_las.py -t ../data/las_test_1/train_data_files.txt -v ../data/las_test_1/val_data_files.txt -s ../models/las_test_1_batch_8  -lp ../data/las_test_1/train_validate_batch_8.log -m pointcnn_seg -x las_test_2
+CUDA_VISIBLE_DEVICES=0 python train_val_las.py -t ../data/las_test_2/train_data_files.txt -v ../data/las_test_2/val_data_files.txt -s ../models/las_test_2_hag  -lp ../data/las_test_2/train_validate.log -m pointcnn_seg -x las_test
 
 CUDA_VISIBLE_DEVICES=0 python test_las_seg.py -t ../data/las_test_1/test_files.txt  -l ../models/las_test_1/pointcnn_seg_las_test_2020-08-30-23-08-49_4536/ckpts/iter-66000  -m pointcnn_seg -x las_test -r 1 --max_point_num 24576 -lp ../data/las_test_1/predicting.log
 
+python evaluation/las_merge.py --datafolder ../data/las_test_1/test

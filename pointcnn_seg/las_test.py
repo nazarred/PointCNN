@@ -1,8 +1,8 @@
 #!/usr/bin/python3
 import math
-num_class = 9
+num_class = 2
 
-sample_num = 6144
+sample_num = 7168
 
 batch_size = 4
 

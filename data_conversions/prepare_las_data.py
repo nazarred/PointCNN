@@ -1,5 +1,8 @@
 """Prepare Data for LAS training task."""
 import math
+import os
+import random
+
 import h5py
 import argparse
 import logging
@@ -14,7 +17,9 @@ from logger import setup_logging
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        '--folders', '-f', help='Coma separated Paths to data folder which contains LAS file')
+        '--folder', '-f', help='Base path folder')
+    parser.add_argument(
+        '--folder_child', '-fc', help='Child folders in the base folder to use, coma separated')
     parser.add_argument(
         '--log_path', '-lp', help='Path where log file should be saved.')
     parser.add_argument(
@@ -23,13 +28,17 @@ def main():
     parser.add_argument('--grid_size', '-g', help='Grid size', type=float, default=0.1)
     parser.add_argument('--save_ply', '-s', help='Convert .pts to .ply', action='store_true')
     parser.add_argument('--use_hag_as_z', '-hag', help='Use height above ground instead of Z', action='store_true')
+    # file list preparing
+    parser.add_argument('--h5_num', '-d', help='Number of h5 files to be loaded each time', type=int, default=4)
+    parser.add_argument('--repeat_num', '-r', help='Number of repeatly using each loaded h5 list', type=int, default=2)
 
 
     args = parser.parse_args()
     setup_logging(args.log_path)
     logger = logging.getLogger(__name__)
     logger.info(f"Start preparing... "
-                f"Folders: {args.folders}, "
+                f"Base Folder: {args.folder}, "
+                f"Child Folders: {args.folder_child}, "
                 f"block size: {args.block_size}, "
                 f"grid size: {args.grid_size}, "
                 f"max_point_num: {args.max_point_num}"
@@ -59,8 +68,10 @@ def main():
     if args.save_ply:
         data_center = np.zeros((batch_size, max_point_num, 3))
     LOAD_FROM_EXT = '.las'
-    for folder in args.folders.split(','):
-        folder = pathlib.Path(folder)
+    base_folder = pathlib.Path(args.folder)
+
+    for folder_child in args.folder_child.split(','):
+        folder = base_folder / folder_child
         datasets = [
             path_to_las_file for path_to_las_file in folder.iterdir() if path_to_las_file.suffix.lower() == LOAD_FROM_EXT
         ]
@@ -226,8 +237,53 @@ def main():
                         idx = idx + 1
             logger.info(f"Done preparing file: {path_to_las_file}")
             logger.info(f"Time spent: {strfdelta(datetime.utcnow() - start_time_file)}")
-    logger.info(f"Done preparing folders: {args.folders}")
+    logger.info(f"Done preparing folders: {args.folder_child}")
     logger.info(f"Time spent: {strfdelta(datetime.utcnow() - start_time)}")
+
+    ################################################################
+    logger.info(f"Start creating the files lists in: {args.folder}")
+
+    root = args.folder
+
+    splits = args.folder_child.split(',')
+    split_filelists = dict()
+    for split in splits:
+        split_filelists[split] = ['./%s/%s\n' % (split, filename) for filename in
+                                  os.listdir(os.path.join(root, split))
+                                  if filename.endswith('.h5')]
+
+    train_h5 = split_filelists['train']
+    random.shuffle(train_h5)
+    train_list = os.path.join(root, 'train_data_files.txt')
+    logger.info('{}-Saving {}...'.format(datetime.now(), train_list))
+    with open(train_list, 'w') as filelist:
+        list_num = math.ceil(len(train_h5) / args.h5_num)
+        for list_idx in range(list_num):
+            train_list_i = os.path.join(root, 'filelists', 'train_files_g_%d.txt' % list_idx)
+            with open(train_list_i, 'w') as filelist_i:
+                for h5_idx in range(args.h5_num):
+                    filename_idx = list_idx * args.h5_num + h5_idx
+                    if filename_idx > len(train_h5) - 1:
+                        break
+                    filename_h5 = train_h5[filename_idx]
+                    filelist_i.write('../' + filename_h5)
+            for repeat_idx in range(args.repeat_num):
+                filelist.write('./filelists/train_files_g_%d.txt\n' % list_idx)
+
+    val_h5 = split_filelists['val']
+    val_list = os.path.join(root, 'val_data_files.txt')
+    logger.info('{}-Saving {}...'.format(datetime.now(), val_list))
+    with open(val_list, 'w') as filelist:
+        for filename_h5 in val_h5:
+            filelist.write(filename_h5)
+
+    test_h5 = split_filelists['test']
+    test_list = os.path.join(root, 'test_files.txt')
+    logger.info('{}-Saving {}...'.format(datetime.now(), test_list))
+    with open(test_list, 'w') as filelist:
+        for filename_h5 in test_h5:
+            filelist.write(filename_h5)
+
 
 
 if __name__ == '__main__':
