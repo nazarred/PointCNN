@@ -241,7 +241,8 @@ def read_xyz_label_from_las_laspy(filename_las, remove_noise=False, use_hag_as_z
         z = None
         for attribute_name in HAG_ATTRIBUTE_NAMES:
             if attribute_name in f.point_format.lookup:
-                z = getattr(f, attribute_name)[keep_points]
+                # normalized height values are in mm, convert to m
+                z = getattr(f, attribute_name)[keep_points] / 1000
         if z is None:
             raise Exception("can't find height_above_ground values")
 
