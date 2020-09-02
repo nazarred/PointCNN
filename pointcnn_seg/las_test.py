@@ -2,11 +2,11 @@
 import math
 num_class = 2
 
-sample_num = 7168
+sample_num = 6144
 
 batch_size = 4
 
-num_epochs = 256
+num_epochs = 512
 
 label_weights = []
 for c in range(num_class):

@@ -1,3 +1,5 @@
 import laspy
-f = laspy.file.File('/home/nazar/phoenixlidar/ml/data/las_test_1/train/SkySkopes_Location1_WGS84_UTM14N_m_12_HAG.las', mode='r')
-f.extra_bytes
+
+from data_utils import read_xyz_label_from_las_laspy
+
+x, i, r, l, n = read_xyz_label_from_las_laspy('/home/nazar/phoenixlidar/ml/data/las_test_1/train/MiniVux_DL_PowerLines_Substation_UTM33N.las', use_hag_as_z=True)

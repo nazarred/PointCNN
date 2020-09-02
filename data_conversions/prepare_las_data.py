@@ -90,6 +90,8 @@ def main():
                 logger.info(f'Computing block id of {xyzirgb_num} points...')
                 xyz_min = np.amin(xyz, axis=0, keepdims=True) - offset
                 xyz_max = np.amax(xyz, axis=0, keepdims=True)
+                logger.info(f"xyz_min: {xyz_min}")
+                logger.info(f"xyz_max: {xyz_max}")
                 block_size = (args.block_size, args.block_size, 2 * (xyz_max[0, -1] - xyz_min[0, -1]))
                 xyz_blocks = np.floor((xyz - xyz_min) / block_size).astype(np.int)
 

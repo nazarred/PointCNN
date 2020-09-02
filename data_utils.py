@@ -243,6 +243,7 @@ def read_xyz_label_from_las_laspy(filename_las, remove_noise=False, use_hag_as_z
             if attribute_name in f.point_format.lookup:
                 # normalized height values are in mm, convert to m
                 z = getattr(f, attribute_name)[keep_points] / 1000
+                break
         if z is None:
             raise Exception("can't find height_above_ground values")
 
@@ -269,6 +270,7 @@ def read_xyz_label_from_las_laspy(filename_las, remove_noise=False, use_hag_as_z
     unique, count = np.unique(label1, return_counts=True)
     logger.info(f"Done loading {filename_las}")
     logger.info(f'Class codes: {dict(zip(unique, count))}')
+
     return xyz, i, rcrn, labels, xyzirgb_num
 
 
