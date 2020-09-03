@@ -1,12 +1,12 @@
 #!/usr/bin/python3
 import math
-num_class = 2
+num_class = 4
 
 sample_num = 6144
 
 batch_size = 4
 
-num_epochs = 512
+num_epochs = 256
 
 label_weights = []
 for c in range(num_class):
