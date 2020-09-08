@@ -127,9 +127,13 @@ def main():
                 label_length2 += 1
                 if label_length < label_length2:
                     # expaning labels and confidence arrays, as the new file appears having mode of them
-                    for i in range(label_length2 - label_length):
-                        merged_label = np.append(merged_label, 0)
-                        merged_confidence = np.append(merged_confidence, 0.0)
+                    extend_array_label = np.zeros(label_length2 - label_length, dtype=int)
+                    extend_array_confidence = np.zeros(label_length2 - label_length, dtype=float)
+                    merged_label = np.append(merged_label, extend_array_label, 0)
+                    merged_confidence = np.append(merged_confidence, extend_array_confidence, 0)
+                    # for i in range(label_length2 - label_length):
+                    #     merged_label = np.append(merged_label, 0)
+                    #     merged_confidence = np.append(merged_confidence, 0.0)
                     label_length = label_length2
 
             for i in range(labels_seg.shape[0]):
