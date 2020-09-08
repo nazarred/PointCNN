@@ -8,6 +8,7 @@ from __future__ import print_function
 import logging
 import os
 import math
+import pathlib
 import random
 import argparse
 from datetime import datetime
@@ -34,6 +35,8 @@ def main():
     splits = ['train', 'val', 'test']
     split_filelists = dict()
     for split in splits:
+        if not pathlib.Path(os.path.join(root, split)).exists():
+            continue
         split_filelists[split] = ['./%s/%s\n' % (split, filename) for filename in os.listdir(os.path.join(root, split))
                                   if filename.endswith('.h5')]
 
